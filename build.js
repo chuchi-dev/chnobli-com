@@ -1,90 +1,68 @@
 import fs from 'fs/promises';
 import command from 'node:child_process';
 import util from 'node:util';
-import Router from 'fire-svelte/routing/router.js';
-// import * as routes from './src/routes/routes.js';
+import { Router } from 'chuchi';
 
 const exec = util.promisify(command.exec);
 
+// the host the pages are rendered for
+const HOST = 'chnobli.com';
 
 async function main() {
 	console.info('build client');
 	await exec('npx vite build --outDir dist-client --ssrManifest');
 
 	console.info('build server');
-	await exec('npx vite build --outDir dist-server --ssr src/server.js');
+	await exec('npx vite build --outDir dist-server --ssr src/server.ts');
 
 	console.info('create dist');
-	try {
-		await fs.rm('dist', { force: true, recursive: true });
-	} catch (e) {}
-
-	await fs.cp(
-		'dist-client/',
-		'dist/',
-		{ recursive: true }
-	);
+	await fs.rm('dist', { force: true, recursive: true });
+	await fs.cp('dist-client/', 'dist/', { recursive: true });
 	await fs.rm('dist/index.html');
-	await fs.rm('dist/ssr-manifest.json');
+	await fs.rm('dist/.vite', { force: true, recursive: true });
 
-	// try {
-	// 	await fs.rm('dist-client', { force: true, recursive: true });
-	// } catch (e) {}
-	// try {
-	// 	await fs.rm('dist-server', { force: true, recursive: true });
-	// } catch (e) {}
-
-	const indexHtml = await fs.readFile(
-		'dist-client/index.html',
-		{ encoding: 'utf8' }
+	const indexHtml = await fs.readFile('dist-client/index.html', 'utf8');
+	const ssrManifest = JSON.parse(
+		await fs.readFile('dist-client/.vite/ssr-manifest.json', 'utf8'),
 	);
-	const ssrManifest = JSON.parse(await fs.readFile(
-		'dist-client/ssr-manifest.json',
-		{ encoding: 'utf8' }
-	));
 
 	const server = await import('./dist-server/server.js');
 
-	const router = new Router;
+	const router = new Router();
 	server.routes.register(router);
 
+	// every page with a fixed uri gets its own index.html
 	for (const route of router.routes) {
-		const dir = route.uri;
-		if (typeof dir !== 'string')
-			throw new Error('only string uri\'s are supported');
+		const uri = route.uri;
+		if (typeof uri !== 'string')
+			throw new Error("only string uri's are supported");
 
-		const { status, fields } = await server.render({
-			method: 'GET',
-			uri: route.uri,
-			ssrManifest
+		const { status, fields } = await server.render(
+			{ method: 'GET', uri, headers: { host: HOST } },
+			{ ssrManifest },
+		);
+		if (status !== 200)
+			throw new Error(`expected status 200 for ${uri}, got ${status}`);
+
+		const path = 'dist' + uri.replace(/\/$/, '') + '/index.html';
+		await fs.mkdir(path.slice(0, path.lastIndexOf('/')), {
+			recursive: true,
 		});
-
-		if (status != '200')
-			throw new Error('expected 200 status');
-
-		try {
-			await fs.mkdir('dist' + dir);
-		} catch (e) {
-			console.log('could not create dir', 'dist' + dir);
-		}
-
-		let html = indexHtml;
-		for (const field in fields) {
-			html = html.replace(`<!--ssr-${field}-->`, fields[field]);
-		}
-
-		const path = 'dist' + dir + '/index.html';
+		await fs.writeFile(path, fill(indexHtml, fields));
 		console.log('create file', path);
-		await fs.writeFile(path, html);
 	}
 
-	try {
-		await fs.rm('dist-client', { force: true, recursive: true });
-	} catch (e) {}
-	try {
-		await fs.rm('dist-server', { force: true, recursive: true });
-	} catch (e) {}
+	await fs.rm('dist-client', { force: true, recursive: true });
+	await fs.rm('dist-server', { force: true, recursive: true });
 
 	console.log('ready in dist');
 }
+
+function fill(html, fields) {
+	for (const field in fields) {
+		html = html.replace(`<!--ssr-${field}-->`, fields[field]);
+	}
+	return html;
+}
+
 main();
