@@ -26,15 +26,15 @@ export async function render(req: any, opt: any) {
 
 	const pageStore = new Writable(page);
 
-	let { html, head } = renderComponent(App, {
+	const { html, head: appHead } = renderComponent(App, {
 		props: {
 			page: pageStore,
 		},
 		context,
 	});
 
-	head += ssrComponents.toHead(opt?.ssrManifest ?? {});
-	head += cache.toHead();
+	const head =
+		appHead + ssrComponents.toHead(opt?.ssrManifest ?? {}) + cache.toHead();
 
 	return {
 		status,

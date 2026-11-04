@@ -16,7 +16,7 @@ async function main() {
 	routes.register(router);
 
 	let hydrated = false;
-	let pageStore = new Writable<any>(null);
+	const pageStore = new Writable<any>(null);
 
 	router.onRoute(async (req, route, routing) => {
 		const { page } = await handleRoute(req, route, cache);

@@ -26,6 +26,7 @@ async function main() {
 		await fs.readFile('dist-client/.vite/ssr-manifest.json', 'utf8'),
 	);
 
+	// @ts-ignore only exists during the build
 	const server = await import('./dist-server/server.js');
 
 	const router = new Router();

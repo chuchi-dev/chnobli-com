@@ -7,6 +7,13 @@
 	"plugins": ["prettier-plugin-svelte"],
 	"overrides": [
 		{
+			"files": "*.{yaml,yml}",
+			"options": {
+				"useTabs": false,
+				"tabWidth": 2
+			}
+		},
+		{
 			"files": "*.svelte",
 			"options": {
 				"parser": "svelte"

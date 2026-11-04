@@ -1,7 +1,6 @@
 import { resolve, relative } from 'path';
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { sveltePreprocess } from 'svelte-preprocess';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ isSsrBuild }) => {
@@ -10,15 +9,7 @@ export default defineConfig(({ isSsrBuild }) => {
 		ssr: {
 			noExternal: isSsrBuild ? true : ['chuchi'],
 		},
-		plugins: [
-			svelte({
-				compilerOptions: {
-					runes: true,
-				},
-				preprocess: [sveltePreprocess()],
-			}),
-			usedSsrComponents(f => relative(__dirname, f)),
-		],
+		plugins: [svelte(), usedSsrComponents(f => relative(__dirname, f))],
 		resolve: {
 			alias: [{ find: '@', replacement: resolve(__dirname, 'src') }],
 		},
@@ -44,7 +35,9 @@ function usedSsrComponents(relativeFn) {
 			if (!match) {
 				// without tracking the page loses its css on first load,
 				// so fail loudly instead of shipping a broken build
-				this.error(`could not inject ssr modules tracking in ${id}`);
+				return this.error(
+					`could not inject ssr modules tracking in ${id}`,
+				);
 			}
 			const idx = match.index + match[0].length;
 

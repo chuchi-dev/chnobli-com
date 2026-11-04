@@ -1,18 +1,25 @@
 {
-	"extends": "@tsconfig/svelte/tsconfig.json",
 	"compilerOptions": {
-		"target": "ESNext",
-		"useDefineForClassFields": true,
+		"target": "ES2020",
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
-		"resolveJsonModule": true,
-		"allowJs": true,
-		"checkJs": true,
-		"isolatedModules": true,
-		"moduleDetection": "force",
+		"verbatimModuleSyntax": true,
+		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./src/*"]
 		},
-		"types": ["vite/client"]
-	}
+		"types": ["vite/client"],
+		"skipLibCheck": true,
+		"checkJs": true,
+		"noEmit": true,
+		"strict": true,
+		"noImplicitAny": false,
+		"plugins": [
+			{
+				"name": "typescript-svelte-plugin",
+				"enabled": true
+			}
+		]
+	},
+	"exclude": ["node_modules", "dist", "dist-client", "dist-server"]
 }
